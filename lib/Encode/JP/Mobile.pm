@@ -1,9 +1,13 @@
 package Encode::JP::Mobile;
-our $VERSION = "0.11";
+our $VERSION = "0.12";
 
 use Encode;
 use XSLoader;
 XSLoader::load(__PACKAGE__, $VERSION);
+
+use base qw( Exporter );
+@EXPORT_OK = qw( InDoCoMoPictograms InKDDIPictograms InSoftBankPictograms InAirEdgePictograms InMobileJPPictograms );
+%EXPORT_TAGS = ( props => [@EXPORT_OK] );
 
 use Encode::Alias;
 define_alias('x-sjis-docomo' => 'x-sjis-imode');
@@ -26,6 +30,56 @@ define_alias('shift_jis-airh' => 'cp932');
 use Encode::JP::Mobile::Vodafone;
 use Encode::JP::Mobile::KDDIJIS;
 
+sub InDoCoMoPictograms {
+    return <<END;
+E63E\tE6A5
+E6AC\tE6AE
+E6B1\tE6B3
+E6B7\tE6BA
+E6CE\tE757
+END
+}
+
+sub InKDDIPictograms {
+    return <<END;
+E468\tE5DF
+EA80\tEB88
+END
+}
+
+sub InSoftBankPictograms {
+    return <<END;
+E001\tE05A
+E101\tE15A
+E201\tE253
+E255\tE257
+E301\tE34D
+E401\tE44C
+E501\tE537
+END
+}
+
+sub InAirEdgePictograms {
+    return <<END;
+E000\tE096
+E098
+E09A
+E09F
+E0A2
+E0A6
+E0A8
+E0AF
+E0BB
+E0C4
+E0C9
+END
+}
+
+sub InMobileJPPictograms {
+    # +utf8::InDoCoMoPictograms etc. don't work here
+    return join "\n", InDoCoMoPictograms, InKDDIPictograms, InSoftBankPictograms, InAirEdgePictograms;
+}
+
 1;
 __END__
 
@@ -35,10 +89,16 @@ Encode::JP::Mobile - Shift_JIS (CP932) variants of Japanese cellphone pictograms
 
 =head1 SYNOPSIS
 
+  use Encode;
   use Encode::JP::Mobile;
 
   my $bytes = "\x82\xb1\xf9\x5d\xf8\xa0\x82\xb1"; # Shift_JIS bytes containing NTT DoCoMo pictograms
   my $chars = decode("x-sjis-imode", $bytes);     # \x{3053}\x{e6b9}\x{e63f}\x{3053}
+
+  use Encode::JP::Mobile ':props';
+  if ($chars =~ /\p{InDoCoMoPictograms}/) {
+      warn "It has DoCoMo pictogram characters!";
+  }
 
 =head1 DESCRIPTION
 
@@ -89,8 +149,8 @@ escape sequence and C<\x0f> is the end.)
 
 Maps Unicode private area characters to Shift_JIS private area (Gaiji)
 characters. This encoding is used in 3GC phones when you input
-pictogram charaters in a web form and submit. Handsets also can decode
-these encodings and display pictogram characters.
+pictogram charaters in a web form on Shift_JIS pages and submit.
+Handsets also can decode these encodings and display pictogram characters.
 
 I<x-sjis-vodafone-auto> is an alias.
 
@@ -148,8 +208,29 @@ C<x-iso-2022-jp-ezweb> is an alias.
 
 Mapping for AirEDGE pictograms. It's a complete subset of cp932C<x-sjis-airh> is an alias.
 
+=back
+
+=head1 UNICODE PROPERTIES
+
+By importing this module with ':props' flag, you'll have following Unicode properties.
+
+=over 4
+
+=item InDoCoMoPictograms
+
+=item InKDDIPictograms
+
+=item InSoftBankPictograms
+
+=item InAirEdgePictograms
 
 =back
+
+Note that if the input is one of x-sjis-* variants, first you need to
+know what encoding the bytes are encoded, and decode the bytes back to
+Unicode, to know if the strings contain these pictogram character
+sets. So it might be only handy if the input is UTF-8 in reality.
+
 
 =head1 BACKWARD COMPATIBLITY
 
@@ -187,7 +268,7 @@ Implement all merged C<x-sjis-mobile-jp> encoding.
 
 =back
 
-=head1 AUTHOR
+=head1 AUTHORS
 
 Tatsuhiko Miyagawa E<lt>miyagawa@bulknews.netE<gt>
 
