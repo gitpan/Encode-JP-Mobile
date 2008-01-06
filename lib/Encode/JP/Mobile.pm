@@ -1,5 +1,5 @@
 package Encode::JP::Mobile;
-our $VERSION = "0.14";
+our $VERSION = "0.15";
 
 use Encode;
 use XSLoader;
@@ -44,6 +44,13 @@ sub InKDDIPictograms {
     return <<END;
 E468\tE5DF
 EA80\tEB88
+EC40\tEC7E
+EC80\tECFC
+ED40\tED8D
+EF40\tEF7E
+EF80\tEFFC
+F040\tF07E
+F080\tF0FC
 END
 }
 
