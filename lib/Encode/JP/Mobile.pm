@@ -1,5 +1,5 @@
 package Encode::JP::Mobile;
-our $VERSION = "0.15";
+our $VERSION = "0.16";
 
 use Encode;
 use XSLoader;
@@ -10,6 +10,7 @@ use base qw( Exporter );
 %EXPORT_TAGS = ( props => [@EXPORT_OK] );
 
 use Encode::Alias;
+# sjis
 define_alias('x-sjis-docomo' => 'x-sjis-imode');
 define_alias('x-sjis-ezweb' => 'x-sjis-kddi');
 define_alias('x-sjis-ezweb-auto' => 'x-sjis-kddi-auto');
@@ -26,6 +27,11 @@ define_alias('shift_jis-docomo' => 'x-sjis-imode');
 define_alias('shift_jis-ezweb' => 'x-sjis-kddi');
 define_alias('shift_jis-ezweb-auto' => 'x-sjis-kddi-auto');
 define_alias('shift_jis-airh' => 'cp932');
+
+# utf8
+define_alias( 'x-utf8-imode'    => 'x-utf8-docomo' );
+define_alias( 'x-utf8-ezweb'    => 'x-utf8-kddi' );
+define_alias( 'x-utf8-vodafone' => 'x-utf8-softbank' );
 
 use Encode::JP::Mobile::Vodafone;
 use Encode::JP::Mobile::KDDIJIS;
@@ -213,13 +219,42 @@ C<x-iso-2022-jp-ezweb> is an alias.
 
 =item x-sjis-airedge
 
-Mapping for AirEDGE pictograms. It's a complete subset of cp932C<x-sjis-airh> is an alias.
+Mapping for AirEDGE pictograms. It's a complete subset of cp932 and
+C<x-sjis-airh> is an alias.
+
+=item x-utf8-docomo, x-utf8-softbank, x-utf8-kddi
+
+x-utf8-* encodings are encodings to display subset of Unicode
+characters in UTF-8 format. The subset is set to characters in:
+
+  cp932 + x-sjis-{career} + (characters mapped from other careers)
+
+When encoding Unicode characters, it automatically does conversion
+from other career based encodings.
+
+For example,
+
+  # KDDI 'Sunny' character in UTF-8
+  my $bytes = "\xEE\xBD\xA0";
+  Encode::from_to($bytes, "utf-8" => "x-utf8-docomo");
+  # Now $bytes has DoCoMo 'Sunny' character in UTF-8
+
+These encodings are round-trip safe, but note that they're still
+subsets of UTF-8 and can't encode/decode characters outside cp932 and
+Japanese mobile characters. You can use Encode fallbacks like
+C<FB_XMLCREF> or custom fallback to display outside characters.
+
+See
+L<http://mobilehacker.g.hatena.ne.jp/tokuhirom/20080116/1200501202>
+and L<http://mobilehacker.g.hatena.ne.jp/tomi-ru/20071116/1195186373>
+for details.
 
 =back
 
 =head1 UNICODE PROPERTIES
 
-By importing this module with ':props' flag, you'll have following Unicode properties.
+By importing this module with ':props' flag, you'll have following
+Unicode properties.
 
 =over 4
 
@@ -277,7 +312,15 @@ Implement all merged C<x-sjis-mobile-jp> encoding.
 
 =head1 AUTHORS
 
-Tatsuhiko Miyagawa E<lt>miyagawa@bulknews.netE<gt>
+Tatsuhiko Miyagawa E<lt>miyagawa@bulknews.netE<gt> with contributions from:
+
+Tokuhiro Matsuno
+
+Naoki Tomita
+
+Masahiro Chiba
+
+=head1 LICENSE
 
 This library is free software, licensed under the same terms with Perl.
 
