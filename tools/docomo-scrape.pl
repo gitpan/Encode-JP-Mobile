@@ -19,6 +19,8 @@ my @prev;
 for my $uri (@url) {
     my $scraper = scraper {
         process 'tr', 'characters[]', scraper {
+            process 'td:nth-child(1)', 'number', 'TEXT';
+            process 'td:nth-child(2) > img', 'image', [ '@src', sub { $_->as_string } ];
             process 'td:nth-child(3)', 'sjis', 'TEXT';
             process 'td:nth-child(5)', 'unicode', 'TEXT';
             process 'td:nth-child(6)', 'name',  'TEXT';
@@ -34,7 +36,7 @@ for my $uri (@url) {
     } else {
         @prev == @chars or die "ja/en count doesn't match";
         for my $c (0..$#prev) {
-            $prev[$c]->{en_name} = $chars[$c]->{name};
+            $prev[$c]->{name_en} = $chars[$c]->{name};
         }
         push @$res, @prev;
     }
