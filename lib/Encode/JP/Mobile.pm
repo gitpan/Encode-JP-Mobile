@@ -1,5 +1,5 @@
 package Encode::JP::Mobile;
-our $VERSION = "0.20";
+our $VERSION = "0.21";
 
 use Encode;
 use XSLoader;
@@ -32,6 +32,8 @@ define_alias('shift_jis-airh' => 'cp932');
 define_alias( 'x-utf8-imode'    => 'x-utf8-docomo' );
 define_alias( 'x-utf8-ezweb'    => 'x-utf8-kddi' );
 define_alias( 'x-utf8-vodafone' => 'x-utf8-softbank' );
+define_alias( 'x-utf8-airh'     => 'x-utf8-docomo' );
+define_alias( 'x-utf8-airedge'  => 'x-utf8-docomo' );
 
 use Encode::JP::Mobile::Vodafone;
 use Encode::JP::Mobile::KDDIJIS;
@@ -209,7 +211,11 @@ I<x-iso-2022-jp-kddi> と同様ですが、絵文字を 裏KDDI Unicode 領域�
 
 AirEDGE の絵文字をマッピングします。cp932 の完全なサブセットで、I<x-sjis-airh> をエイリアスとして利用できます。
 
-=item x-utf8-docomo, x-utf8-softbank, x-utf8-kddi
+AirEDGE 独自の文字コードでは、絵文字は E000 - E0C9 にマップされ、CP932 と同様のエンコーディングですが、実際にはこのエンコーディングを利用することはまずないと思われます。AirEDGE 端末から「ウェブ用絵文字」を利用して送信したデータは、DoCoMo 用絵文字と同様のエンコーディングで送信され、CP932 互換のマッピングで DoCoMo 用絵文字のコードポイントにマッピングされます。また、AirEDGE 独自の絵文字私用領域は SoftBank の私用領域とも重複しており、相互変換の上でも問題があります。
+
+I<x-sjis-airedge> は I<x-sjis-docomo> の別名、として考えておくとよいでしょう。
+
+=item x-utf8-docomo, x-utf8-softbank, x-utf8-kddi, x-utf8-airh
 
 これらのエンコーディングは、Unicode 私的利用領域にある各キャリアの絵文字を相互変換しながら UTF-8 互換のエンコーディングにエンコードするのに使用します。utf-8 という名前がついていますが、実際にはすべての Unicode 文字をエンコードするわけではなく、サブセットとして、
 
@@ -228,6 +234,8 @@ AirEDGE の絵文字をマッピングします。cp932 の完全なサブセッ
 
 詳しくは L<http://mobilehacker.g.hatena.ne.jp/tokuhirom/20080116/1200501202>
 や L<http://mobilehacker.g.hatena.ne.jp/tomi-ru/20071116/1195186373> などを参照。
+
+I<x-utf8-airh>, I<x-utf8-airedge> については、I<x-utf8-docomo> のエイリアスとして定義されています。上述のとおり、AirEDGE 独自の絵文字私用領域は SoftBank と重複しており、また実用上そのデータが端末から送信されることはまれです。AirEDGE 端末については、DoCoMo 端末と同様のエンコーディングを利用するものという前提で、このような実装になっています。
 
 =back
 
