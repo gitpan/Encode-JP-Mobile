@@ -1,12 +1,12 @@
 package Encode::JP::Mobile;
-our $VERSION = "0.22";
+our $VERSION = "0.23";
 
 use Encode;
 use XSLoader;
 XSLoader::load(__PACKAGE__, $VERSION);
 
 use base qw( Exporter );
-@EXPORT_OK = qw( InDoCoMoPictograms InKDDIPictograms InSoftBankPictograms InAirEdgePictograms InMobileJPPictograms InKDDISoftBankConflicts);
+@EXPORT_OK = qw( InDoCoMoPictograms InKDDIPictograms InSoftBankPictograms InAirEdgePictograms InMobileJPPictograms InKDDISoftBankConflicts InKDDICP932Pictograms InKDDIAutoPictograms);
 %EXPORT_TAGS = ( props => [@EXPORT_OK] );
 
 use Encode::Alias;
@@ -46,10 +46,15 @@ E6CE\tE757
 END
 }
 
-sub InKDDIPictograms {
+sub InKDDICP932Pictograms {
     return <<END;
 E468\tE5DF
 EA80\tEB88
+END
+}
+
+sub InKDDIAutoPictograms {
+    return <<END;
 EC40\tEC7E
 EC80\tECFC
 ED40\tED8D
@@ -58,6 +63,10 @@ EF80\tEFFC
 F040\tF07E
 F080\tF0FC
 END
+}
+
+sub InKDDIPictograms {
+    return join "\n", InKDDICP932Pictograms(), InKDDIAutoPictograms();
 }
 
 sub InSoftBankPictograms {
@@ -98,6 +107,7 @@ sub InKDDISoftBankConflicts {
 E501\tE537
 END
 }
+
 
 1;
 
@@ -259,6 +269,10 @@ I<x-utf8-airh>, I<x-utf8-airedge> は存在しません。Willcom 端末は utf8
 
 =item InKDDISoftBankConflicts
 
+=item InKDDICP932Pictograms
+
+=item InKDDIAutoPictograms
+
 =back
 
 InKDDIPictograms はCP932ベースと裏KDDI Unicodeの双方を含みます。
@@ -277,6 +291,8 @@ InKDDISoftBankConflicts は SoftBank と KDDI (x-sjis-kddi を利用した場合
           # KDDI
       }
   }
+
+I<InKDDICP932Pictograms>, I<InKDDIAutoPictograms> はそれぞれ、I<x-sjis-kddi>, I<x-sjis-kddi-auto> のマッピングによって得られる Unicode 私用領域のレンジをあらわし、InKDDIPictograms はその2つをマージしたものとして扱われます。
 
 =head1 BACKWARD COMPATIBLITY
 
