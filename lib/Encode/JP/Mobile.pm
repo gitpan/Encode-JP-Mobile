@@ -1,5 +1,5 @@
 package Encode::JP::Mobile;
-our $VERSION = "0.23";
+our $VERSION = "0.24";
 
 use Encode;
 use XSLoader;
@@ -57,7 +57,8 @@ sub InKDDIAutoPictograms {
     return <<END;
 EC40\tEC7E
 EC80\tECFC
-ED40\tED8D
+ED40\tED7E
+ED80\tED8D
 EF40\tEF7E
 EF80\tEFFC
 F040\tF07E
