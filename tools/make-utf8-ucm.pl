@@ -15,13 +15,11 @@ my $cp932_ucm = file($FindBin::Bin, '..', 'ucm', 'cp932.ucm');
 
 my $uni_range_for = {
     docomo   => InDoCoMoPictograms(),
-    kddi     => InKDDIPictograms(),
+    kddi     => InKDDIAutoPictograms(),
     softbank => InSoftBankPictograms(),
 };
 
 sub SCALAR::to_hex($) { sprintf '%X', $_[0] }
-sub SCALAR::omote2ura($) { $_[0]->encode('x-sjis-kddi')->decode('x-sjis-kddi-auto') }
-sub SCALAR::uni2int($) { unpack 'U*', $_[0] }
 
 &main;exit;
 
@@ -37,26 +35,18 @@ sub main {
                 print {$fh} "\n\n# pictogram convert map ($from => $to)\n";
 
                 for my $srcuni (sort keys %{$map->{$from}}) {
-                    my $dstuni = $map->{$from}{$srcuni}{$to} or next;
-                    printf {$fh} "<U%s> %s |1 # %s\n", $srcuni, unihex2utf8hex($dstuni), comment_for($from);
+                    my $dstuni = $map->{$from}->{$srcuni}->{$to} or next;
+                    next unless $dstuni->{type} eq 'pictogram';
+                    printf {$fh} "<U%s> %s |1 # %s\n", $srcuni, unihex2utf8hex($dstuni->{unicode}), comment_for($from);
                 }
             }
 
             # original
-            if ($to eq 'kddi') {
-                # ura-kddi
-                range_each($to, sub {
-                    my $unicode = shift;
-                    my $unihex = $unicode->chr->omote2ura->uni2int->to_hex;
-                    print {$fh} sprintf "<U%s> %s |0 # %s\n", $unihex, unihex2utf8hex($unihex), "UraKDDI pictogram";
-                });
-            } else {
-                range_each($to, sub {
-                    my $unicode = shift;
-                    my $unihex = $unicode->to_hex;
-                    print {$fh} sprintf "<U%s> %s |0 # %s\n", $unihex, unihex2utf8hex($unihex), "$to pictogram";
-                });
-            }
+            range_each($to, sub {
+                my $unicode = shift;
+                my $unihex = $unicode->to_hex;
+                print {$fh} sprintf "<U%s> %s |0 # %s\n", $unihex, unihex2utf8hex($unihex), "$to pictogram";
+            });
         });
     }
 }
@@ -66,6 +56,7 @@ sub generate_ucm {
     my $fh = file('ucm', "x-utf8-$to.ucm")->openw or die $!;
     print {$fh} header($to);
     print {$fh} unicode_ucm($cp932_ucm);
+    print {$fh} '<U301C> \xE3\x80\x9C |0 # WAVE DUSH', "\n"; # ad-hoc solution for  FULLWIDTH TILDE Problem.
     $generate_pictogram_ucm->($fh);
     print {$fh} "END CHARMAP\n";
     $fh->close;
@@ -86,7 +77,6 @@ sub header {
         docomo imode
         kddi ezweb
         softbank vodafone
-        airh airedge
     );
 
     <<"HEAD";
@@ -101,8 +91,11 @@ HEAD
 
 sub unihex2utf8hex {
     my $uni = shift;
-    $uni = 'H*'->unpack($uni->hex->chr->encode('utf-8'));
-    $uni =~ s/(..)/\\x$1/g;
+    $uni =~ s{(....)}{
+        my $x = 'H*'->unpack($1->hex->chr->encode('utf-8'));
+        $x =~ s/(..)/\\x$1/g;
+        $x;
+    }ge;
     $uni;
 }
 

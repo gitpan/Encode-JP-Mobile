@@ -1,32 +1,30 @@
 package Encode::JP::Mobile;
-our $VERSION = "0.24";
+use strict;
+our $VERSION = "0.25";
 
+use Carp;
 use Encode;
 use XSLoader;
 XSLoader::load(__PACKAGE__, $VERSION);
 
 use base qw( Exporter );
-@EXPORT_OK = qw( InDoCoMoPictograms InKDDIPictograms InSoftBankPictograms InAirEdgePictograms InMobileJPPictograms InKDDISoftBankConflicts InKDDICP932Pictograms InKDDIAutoPictograms);
-%EXPORT_TAGS = ( props => [@EXPORT_OK] );
+our @EXPORT_OK = qw( InDoCoMoPictograms InKDDIPictograms InSoftBankPictograms InAirEdgePictograms InMobileJPPictograms InKDDISoftBankConflicts InKDDICP932Pictograms InKDDIAutoPictograms);
+our %EXPORT_TAGS = ( props => [@EXPORT_OK] );
 
 use Encode::Alias;
-# sjis
-define_alias('x-sjis-docomo' => 'x-sjis-imode');
-define_alias('x-sjis-ezweb' => 'x-sjis-kddi');
-define_alias('x-sjis-ezweb-auto' => 'x-sjis-kddi-auto');
-define_alias('x-sjis-airedge' => 'cp932');
-define_alias('x-sjis-airh' => 'cp932');
-define_alias('x-sjis-vodafone-auto' => 'x-sjis-softbank-auto');
+
+# sjis-raw
+define_alias( 'x-sjis-imode-raw'         => 'x-sjis-docomo-raw' );
+define_alias( 'x-sjis-airedge-raw'       => 'x-sjis-airh-raw' );
+define_alias( 'x-sjis-vodafone-auto-raw' => 'x-sjis-softbank-auto-raw' );
+
+define_alias( 'x-sjis-kddi'              => 'x-sjis-kddi-cp932-raw' );
+define_alias( 'x-sjis-ezweb'             => 'x-sjis-kddi-cp932-raw' );
+define_alias( 'x-sjis-ezweb-cp932-raw'   => 'x-sjis-kddi-cp932-raw' );
+define_alias( 'x-sjis-ezweb-auto-raw'    => 'x-sjis-kddi-auto-raw' );
 
 # backward compatiblity
-define_alias('shift_jis-imode' => 'x-sjis-imode');
-define_alias('shift_jis-kddi' => 'x-sjis-kddi');
-define_alias('shift_jis-kddi-auto' => 'x-sjis-kddi-auto');
-define_alias('shift_jis-airedge' => 'cp932');
-define_alias('shift_jis-docomo' => 'x-sjis-imode');
-define_alias('shift_jis-ezweb' => 'x-sjis-kddi');
-define_alias('shift_jis-ezweb-auto' => 'x-sjis-kddi-auto');
-define_alias('shift_jis-airh' => 'cp932');
+define_alias('shift_jis-kddi'       => 'x-sjis-kddi-cp932-raw');
 
 # utf8
 define_alias( 'x-utf8-imode'    => 'x-utf8-docomo' );
@@ -35,6 +33,20 @@ define_alias( 'x-utf8-vodafone' => 'x-utf8-softbank' );
 
 use Encode::JP::Mobile::Vodafone;
 use Encode::JP::Mobile::KDDIJIS;
+use Encode::JP::Mobile::ConvertPictogramSJIS;
+require Encode::JP::Mobile::Fallback;
+require Encode::JP::Mobile::Character;
+
+use Encode::MIME::Name;
+
+for (Encode->encodings('JP::Mobile')) {
+    next if defined $Encode::MIME::Name::MIME_NAME_OF{$_};
+    my $mime_name = $_ =~ /utf8/ ? 'UTF-8'
+                  : $_ =~ /sjis/ ? 'Shift_JIS'
+                  : $_ =~ /2022/ ? 'ISO-2022-JP'
+                  : undef;
+    $Encode::MIME::Name::MIME_NAME_OF{$_} = $mime_name if $mime_name;
+}
 
 sub InDoCoMoPictograms {
     return <<END;
@@ -109,8 +121,8 @@ E501\tE537
 END
 }
 
-
 1;
+__END__
 
 =encoding utf-8
 
@@ -131,7 +143,6 @@ Encode::JP::Mobile - 日本の携帯電話向け Shift_JIS (CP932) / UTF-8 エ�
       warn "It has DoCoMo pictogram characters!";
   }
 
-
 =head1 DESCRIPTION
 
 Encode::JP::Mobile は Encode 用の拡張モジュールで、日本の携帯電話用絵文字を Unicode の私用領域 (PRIVATE AREA) にマッピングします。
@@ -150,13 +161,13 @@ NTT DoCoMo の i-mode 端末用のマッピング。絵文字は Shift_JIS の�
 
 例えば、C<U+E64E> は I<晴れ> の絵文字で、このエンコーディングでは C<\xF8\X9F> にエンコードされます。
 
-このエンコーディングは CP932 の完全なサブセットです。現状のバージョンでは、KDDI/AU の絵文字をマップした Unicode 私用領域からDoCoMo 絵文字へのマッピングもサポートしています。例えば、
+このエンコーディングは CP932 の完全なサブセットです。現状のバージョンでは、(x-sjis-kddi-autoでdecodeした)KDDI/AU の絵文字および SoftBank の絵文字をマップした Unicode 私用領域からDoCoMo 絵文字へのマッピングもサポートしています。例えば、
 
   my $kddi  = "\xf6\x59"; # KDDI/AU の SJIS で [!]
-  my $char  = decode("x-sjis-kddi", $bytes); # \x{E481}
+  my $char  = decode("x-sjis-kddi-auto-raw", $bytes); # \x{EF59}
   my $imode = encode("x-sjis-imode", $char); # \xf9\xdc -- DoCoMo の SJIS で [!]
 
-のように相互変換されます。B<この機能は将来のバージョンで削除される予定です。後述するx-utf8-*を経由して相互変換を行ってください>
+のように相互変換されます。
 
 I<x-sjis-docomo> をエイリアスとして利用できます。
 
@@ -166,7 +177,9 @@ SoftBank 絵文字をエンコードするためのエスケープシーケン�
 
 I<x-sjis-vodafone> をエイリアスとして利用できます。
 
-例えば、C<U+E001> は I<男の子> の絵文字で、このエンコーディングでは C<\x1b$G!\x0f> のようにエンコードされます。(C<\x1b$G> がエスケープシーケンス開始、C<\x0f> が終了を示す）
+例えば、C<U+E001> は I<男の子> の絵文字で、このエンコーディングでは C<\x1b$G!\x0f> のようにエンコードされます。(C<\x1b> がエスケープシーケンス開始、C<\x0f> が終了を示す）
+
+DoCoMo および (x-sjis-kddi-autoでdecodeした)KDDI/AU の絵文字は適切な SoftBank 絵文字にマッピングされます。
 
 =item x-sjis-softbank-auto
 
@@ -176,9 +189,11 @@ I<x-sjis-vodafone-auto> をエイリアスとして利用できます。
 
 Shift_JIS 私用領域のマッピングは CP932 に似ていますが、若干ずれている場所があります。
 
-例えば、 U<+E001> は I<男の子> 絵文字 (I<x-sjis-softbank> と同様) で、このエンコーディングでは I<\xF9\x41> とエンコードされます。
+例えば、 C<U+E001> は I<男の子> 絵文字 (I<x-sjis-softbank> と同様) で、このエンコーディングでは I<\xF9\x41> とエンコードされます。
 
-=item x-sjis-kddi
+DoCoMo および KDDI/AU の絵文字は適切な SoftBank 絵文字にマッピングされます。
+
+=item x-sjis-kddi-cp932-raw
 
 KDDI/AU 絵文字のマッピング。（おそらく）CP932 をベースにしていますが、CP932.TXT には含まれない私用領域文字を多く含んでいます。
 
@@ -186,7 +201,7 @@ KDDI/AU 絵文字のマッピング。（おそらく）CP932 をベースにし
 
 このエンコーディングに含まれる一部の絵文字は、SoftBank の私用領域と重複しています。
 
-現状のバージョンでは、DoCoMo の絵文字をマップした Unicode 私用領域から KDDI/AU 絵文字へのマッピングもサポートしています。B<この機能は将来のバージョンで削除される予定です。後述するx-utf8-*を経由して相互変換を行ってください>
+このエンコーディングでは、絵文字の相互変換がおこなわれないことに注意してください。これは、KDDI-CP932 の Unicode の領域が SoftBank の絵文字領域と重複しているため、ただしく相互変換することができないためです。絵文字相互変換機能を利用したい場合には x-sjis-kddi-auto を使用してください。
 
 I<x-sjis-ezweb> をエイリアスとして利用できます。
 
@@ -196,17 +211,7 @@ KDDI/AU 絵文字のマッピングで、端末内部の Shift_JIS - UTF-8 間�
 
 KDDI端末から、UTF-8 ページ内の Web フォームに絵文字を入力して送信した場合、x-sjis-kddi でマップされる Unicode 私用領域 (CP932 ベース) とは異なる領域（通称 裏KDDI Unicode）が利用されます。x-sjis-kddi-auto は、この領域と、KDDI 端末の Shift_JIS 外字バイト列とをマッピングしたものです。
 
-I<x-sjis-kddi-auto> と I<x-sjis-kddi> は Unicode 外字領域のコードポイントを相互に共有しているため、ラウンドトリップすることが可能です。つまり、
-
-  my $bytes = "\xf6\x59";                 # [!] in KDDI/AU
-  decode("x-sjis-kddi", $bytes);          # \x{E481} -- CP932 ベースのマッピング
-  decode("x-sjis-kddi-auto", $bytes);     # \x{EF59} -- UTF-8 端末変換と同様のマッピング
-  encode("x-sjis-kddi", "\x{EF59}");      # $bytes と同じ
-  encode("x-sjis-kddi-auto", "\x{E481}"); # $bytes と同じ
-
-このようにエンコードする際は、どちらを利用しても同じ結果が得られるため、UTF-8 端末からの入力をそのままデータベースに保存するようなケースでは I<x-sjis-kddi-auto> を利用するとよいでしょう。I<x-sjis-kddi> とは異なり、このエンコーディングに含まれる絵文字は、SoftBank の私用領域と重複しません。
-
-現状のバージョンでは、DoCoMo の絵文字をマップした Unicode 私用領域から KDDI/AU 絵文字へのマッピングもサポートしています。B<この機能は将来のバージョンで削除される予定です。後述するx-utf8-*を経由して相互変換を行ってください>
+現状のバージョンでは、DoCoMo の絵文字をマップした Unicode 私用領域から KDDI/AU 絵文字、SoftBank 絵文字へのマッピングもサポートしています。
 
 C<x-sjis-ezweb-auto> をエイリアスとして利用できます。
 
@@ -220,7 +225,7 @@ C<x-iso-2022-jp-ezweb> をエイリアスとして利用できます。
 
 =item x-iso-2022-jp-kddi-auto
 
-I<x-iso-2022-jp-kddi> と同様ですが、絵文字を 裏KDDI Unicode 領域にデコードします。
+I<x-iso-2022-jp-kddi> と同様ですが、絵文字を KDDI-Auto の Unicode 領域にデコードします。
 
 =item x-sjis-airedge
 
@@ -229,6 +234,8 @@ AirEDGE の絵文字をマッピングします。cp932 の完全なサブセッ
 AirEDGE 独自の文字コードでは、絵文字は E000 - E0C9 にマップされ、CP932 と同様のエンコーディングですが、実際にはこのエンコーディングを利用することはまずないと思われます。AirEDGE 端末から「ウェブ用絵文字」を利用して送信したデータは、DoCoMo 用絵文字と同様のエンコーディングで送信され、CP932 互換のマッピングで DoCoMo 用絵文字のコードポイントにマッピングされます。また、AirEDGE 独自の絵文字私用領域は SoftBank の私用領域とも重複しており、相互変換の上でも問題があります。
 
 I<x-sjis-airedge> は I<x-sjis-docomo> の別名、として考えておくとよいでしょう。
+
+SoftBank および KDDI/AU の絵文字は適切な DoCoMo 絵文字(ウェブ入力用絵文字)にマッピングされます。
 
 =item x-utf8-docomo, x-utf8-softbank, x-utf8-kddi
 
@@ -245,12 +252,17 @@ I<x-sjis-airedge> は I<x-sjis-docomo> の別名、として考えておくと�
   Encode::from_to($bytes, "utf-8" => "x-utf8-docomo");
   # $bytes は DoCoMo の "晴れ" 絵文字を UTF-8 でエンコードしたもの
 
-これらのエンコードは基本的にラウンドトリップ可能ですが、UTF-8のサブセットであるため、CP932 および携帯絵文字以外の文字をエンコード・デコードすることはできません。また、各キャリア間で変換不可能な文字についても対応するマッピングが存在しない場合がありますので、C<FB_XMLCREF> などの fallback や、カスタムコールバックなどを利用して代替文字を表示する必要があります。
-
-詳しくは L<http://mobilehacker.g.hatena.ne.jp/tokuhirom/20080116/1200501202>
-や L<http://mobilehacker.g.hatena.ne.jp/tomi-ru/20071116/1195186373> などを参照。
+これらのエンコードは基本的にラウンドトリップ可能ですが、UTF-8のサブセットであるため、CP932 および携帯絵文字以外の文字をエンコード・デコードすることはできません。また、各キャリア間で変換不可能な文字についても対応するマッピングが存在しない場合がありますので、L<Encode::JP::Mobile::FB_CHARACTER> や カスタムコールバックなどを利用して代替文字を表示する必要があります。
 
 I<x-utf8-airh>, I<x-utf8-airedge> は存在しません。Willcom 端末は utf8 でページを表示している場合には絵文字の表示ができないようです。詳しくは L<http://mobilehacker.g.hatena.ne.jp/tokuhirom/20080118/1200637282> を参照。Willcom 端末で絵文字を表示させたい場合には I<x-sjis-airh>, I<x-sjis-airedge> をご利用ください。
+
+=item x-sjis-docomo-raw, x-sjis-softbank-raw, x-sjis-softbank-auto-raw, x-sjis-kddi-cp932-raw, x-sjis-kddi-auto-raw, x-sjis-airh-raw
+
+x-sjis-* のエンコーディングには -raw suffix がついたバージョンのエンコーディングも用意されています。
+
+これは、FALLBACK によって文字コードを判定するような用途を想定しています。
+
+x-utf8-*-raw が用意されていないのは、utf-8 エンコーディングがそれにあたるからです。
 
 =back
 
@@ -260,44 +272,37 @@ I<x-utf8-airh>, I<x-utf8-airedge> は存在しません。Willcom 端末は utf8
 
 =over 4
 
-=item InDoCoMoPictograms
+=item * InMobileJPPictograms
 
-=item InKDDIPictograms
+Encode::JP::Mobile であつかうすべての絵文字にマッチします。
 
-=item InSoftBankPictograms
+=item * InDoCoMoPictograms
 
-=item InAirEdgePictograms
+=item * InKDDIPictograms
 
-=item InKDDISoftBankConflicts
+=item * InSoftBankPictograms
 
-=item InKDDICP932Pictograms
+=item * InAirEdgePictograms
 
-=item InKDDIAutoPictograms
+これらはそれぞれそのキャリアの表示できる絵文字にマッチします。
+
+=item * InKDDICP932Pictograms
+
+=item * InKDDIAutoPictograms
+
+I<InKDDICP932Pictograms>, I<InKDDIAutoPictograms> はそれぞれ、I<x-sjis-kddi>, I<x-sjis-kddi-auto> のマッピングによって得られる Unicode 私用領域のレンジをあらわし、I<InKDDIPictograms> はその双方を含みます。
+
+=item * InKDDISoftBankConflicts
+
+SoftBank と KDDI (x-sjis-kddi を利用した場合) の Unicode 私用領域の重複する文字列を含んでいます。
 
 =back
-
-InKDDIPictograms はCP932ベースと裏KDDI Unicodeの双方を含みます。
-
-入力が Shift_JIS である場合、まずどの x-sjis-* に対応するかを判別した上でデコードし、Unicode コードポイントを得たあとでないとキャリアを見分けることができません。よって入力が UTF-8 である場合や、いったん x-sjis-* を利用してデコードしたものに対して使うと便利でしょう。
-
-InKDDISoftBankConflicts は SoftBank と KDDI (x-sjis-kddi を利用した場合) の Unicode 私用領域の重複する文字列を含んでいます。以下のようなコードで、元々の絵文字が KDDI のものであったか、SoftBank のものであったか判定することが可能です（文字列に含まれる絵文字が重複部分のみの場合、判定することはできません）。
-
-  my $string = ...;
-
-  if ($string =~ /\p{InKDDISoftBankConflicts}/) {
-      eval { Encode::encode("x-sjis-kddi", $string, Encode::FB_CROAK) };
-      if ($@) {
-          # softbank
-      } else {
-          # KDDI
-      }
-  }
-
-I<InKDDICP932Pictograms>, I<InKDDIAutoPictograms> はそれぞれ、I<x-sjis-kddi>, I<x-sjis-kddi-auto> のマッピングによって得られる Unicode 私用領域のレンジをあらわし、InKDDIPictograms はその2つをマージしたものとして扱われます。
 
 =head1 BACKWARD COMPATIBLITY
 
 バージョン 0.07 から、モジュールで利用するエンコーディング名を I<x-sjis-*> のように変更しました。以前の I<shift_jis-*> というエイリアスも残してありますが、将来のリリースで削除される予定です。
+
+バージョン 0.25 から、x-sjis-kddi-cp932-raw(旧称 x-sjis-kddi)は DoCoMo との絵文字相互変換をおこなわなくなりました。
 
 =head1 AUTHORS
 
@@ -317,6 +322,7 @@ This library is free software, licensed under the same terms with Perl.
 
 L<Encode>, L<HTML::Entities::ImodePictogram>, L<Unicode::Japanese>
 
+L<http://coderepos.org/share/wiki/Mobile/Encoding>
 L<http://www.nttdocomo.co.jp/service/imode/make/content/pictograph/basic/>
 L<http://www.nttdocomo.co.jp/service/imode/make/content/pictograph/extention/>
 L<http://www.au.kddi.com/ezfactory/tec/spec/3.html>

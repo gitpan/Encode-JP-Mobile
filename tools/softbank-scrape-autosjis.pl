@@ -11,33 +11,25 @@ use FindBin;
 #  ref. http://www31.ocn.ne.jp/~h_ishida/xdoc2txt.html
 
 my $pdf_text_file = shift or die "Usage: softbank-scrape-autosjis.pl 103-111-HTML_2.0.0.txt";
-my $fh =file($pdf_text_file)->openr;
+my $pdf_fh =file($pdf_text_file)->openr;
 
 my %map;
-while (my $line = <$fh>) {
+while (my $line = <$pdf_fh>) {
     chomp $line;
-    my @codes = split /\s+/, $line;
+    next if $line !~ /^&#\d\d\d\d\d;\s*&#x/;
 
-    if ( @codes != 4 || $codes[0] =~ /^&#x/ ) {
-        next;
-    }
+    my @codes = split /\s+/, $line;
+    next if @codes != 4;
 
     my $unicode  = strip_entity_ref_mark($codes[1]);
     my $shiftjis = $codes[3];
 
     $map{ $unicode } = $shiftjis;
 }
+close $pdf_fh;
 
+print Dump(\%map);
 
-
-my $table_file = "$FindBin::Bin/../dat/softbank-table.yaml";
-my $table = YAML::LoadFile($table_file);
-
-for my $emoji (@$table) {
-    $emoji->{sjis_auto} = $map{ $emoji->{unicode} };
-}
-
-print Dump $table;
 
 sub strip_entity_ref_mark {
     local $_ = shift;

@@ -16,7 +16,7 @@ my $re_scan_jis = qr{
    (?:($RE{JIS_0212})|$RE{JIS_0208}|($RE{ISO_ASC})|($RE{JIS_KANA}))([^\e]*)
 }x;
 
-sub _encoding() { 'x-sjis-kddi' }
+sub _encoding() { 'x-sjis-kddi-cp932-raw' }
 
 sub decode($$;$) {
     my ($self, $str, $chk) = @_;
@@ -25,7 +25,7 @@ sub decode($$;$) {
     if ($chk) {
         $str =~ s/([^\x00-\x7f].*)$//so and $residue = $1;
     }
-    $residue .= jis_sjis( \$str );
+    $residue .= _jis_sjis( \$str );
     $_[1] = $residue if $chk;
 
     return Encode::decode( $self->_encoding, $str, FB_PERLQQ );
@@ -34,13 +34,13 @@ sub decode($$;$) {
 sub encode($$;$) {
     my ( $obj, $utf8, $chk ) = @_;
     my $octet = Encode::encode( $obj->_encoding, $utf8, $chk );
-    return sjis_jis( $octet );
+    return _sjis_jis( $octet );
 }
 
 sub ASC () { 1 }
 sub JIS_0208 () { 2 }
 sub KANA () { 3 }
-sub sjis_jis {
+sub _sjis_jis {
     my $octet = shift;
 
     use bytes;
@@ -71,7 +71,7 @@ sub sjis_jis {
             }
             $i++;
             last unless $i<@chars;
-            my ($c1, $c2) = sjis2jis_one($x, ord $chars[$i]);
+            my ($c1, $c2) = _sjis2jis_one($x, ord $chars[$i]);
             $res .= chr($c1).chr($c2);
         }
     }
@@ -82,7 +82,7 @@ sub sjis_jis {
 
     $res;
 }
-sub sjis2jis_one {
+sub _sjis2jis_one {
     my ($c1, $c2) = @_;
 
     # 0x0600 : 0xF340 - 0xF48D
@@ -112,7 +112,7 @@ sub sjis2jis_one {
     return ($c1, $c2);
 }
 
-sub jis_sjis {
+sub _jis_sjis {
     local ${^ENCODING};
 
     my $r_str = shift;
@@ -128,7 +128,7 @@ sub jis_sjis {
             $chunk;
         } else {
             $chunk =~ s((..)){
-                pack "H*", sprintf"%X", jis2sjis_one(hex(unpack "H*", $1));
+                pack "H*", sprintf"%X", _jis2sjis_one(hex(unpack "H*", $1));
             }geox;
             $chunk;
         }
@@ -140,15 +140,15 @@ sub jis_sjis {
     return $residue;
 }
 
-sub jis2sjis_one { my $x = shift; return ( xy($x) << 8 ) + zu($x) } # input is binary
+sub _jis2sjis_one { my $x = shift; return ( _xy($x) << 8 ) + _zu($x) } # input is binary
 
-sub high { my $x = shift; $x >> 8 }
-sub low  { my $x = shift; $x & 0xff }
+sub _high { my $x = shift; $x >> 8 }
+sub _low  { my $x = shift; $x & 0xff }
 
-sub xy {
+sub _xy {
     my $jis = shift;
 
-    my $pq = high($jis);
+    my $pq = _high($jis);
     my $t  = ceil( $pq / 2 ) + 0x70;
     my $ans = ($t <= 0x9F) ? $t : $t+0x40;
 
@@ -162,10 +162,10 @@ sub xy {
     }
 }
 
-sub zu {
+sub _zu {
     my $jis = shift;
-    my $pq  = high($jis);
-    my $rs  = low($jis);
+    my $pq  = _high($jis);
+    my $rs  = _low($jis);
 
     if ( $pq % 2 ) {    # odd
         my $t = $rs + 0x20;
@@ -184,7 +184,7 @@ use Encode::Alias;
 define_alias('x-iso-2022-jp-ezweb-auto' => 'x-iso-2022-jp-kddi-auto');
 __PACKAGE__->Define(qw(x-iso-2022-jp-kddi-auto));
 
-sub _encoding() { 'x-sjis-kddi-auto' }
+sub _encoding() { 'x-sjis-kddi-auto-raw' }
 
 1;
 

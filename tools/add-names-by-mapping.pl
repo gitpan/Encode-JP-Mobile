@@ -1,7 +1,6 @@
 #!/usr/bin/perl
 use strict;
 use lib "lib";
-use blib;
 
 use warnings;
 use YAML;
@@ -13,7 +12,7 @@ my($file, $to, $force) = @ARGV;
 
 my $dat = YAML::LoadFile($file);
 my $from = ($file =~ /(\w*)-table\.yaml/)[0] or die;
-$to ||= $from eq 'kddi' ? 'docomo' : 'kddi';
+$to ||= 'docomo';
 
 warn "Updating $from table by mapping to $to pictograms\n";
 

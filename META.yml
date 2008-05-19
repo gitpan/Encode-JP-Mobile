@@ -1,12 +1,14 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Encode-JP-Mobile
-version:      0.24
-version_from: lib/Encode/JP/Mobile.pm
-installdirs:  site
-requires:
+--- #YAML:1.0
+name:                Encode-JP-Mobile
+version:             0.25
+abstract:            ~
+license:             ~
+author:              ~
+generated_by:        ExtUtils::MakeMaker version 6.44
+distribution_type:   module
+requires:     
     Encode:                        2.23
     File::ShareDir:                0.05
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.30
+meta-spec:
+    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
+    version: 1.3
