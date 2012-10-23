@@ -21,4 +21,4 @@ requires:
   Encode: 2.23
   File::ShareDir: 0.05
   MIME::Words: 5.428
-version: 0.29
+version: 0.30
